@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Flip Clock Examples</title>
+    <link rel="stylesheet" href="../src/flip-clock.css" media="screen" charset="utf-8">
+    <style media="screen">
+      /* Start of Flip Clock blue CSS */
+      .flip-clock.flipclock-blue div{
+        color:         white;
+        background:    #05a19f;
+        -moz-box-shadow:    3px 3px 3px #05616f;
+        -webkit-box-shadow: 3px 3px 3px #05616f;
+        box-shadow:         3px 3px 3px #05616f;
+      }
+      /* End of Flip Clock blue CSS */
+
+      /* Start of Flip Clock linear CSS */
+      .flipclock-linear .flip-top-animate {
+        animation-timing-function: linear;
+        animation-duration: 0.2s;
+      }
+
+      .flipclock-linear .flip-bottom-animate {
+        animation-timing-function: linear;
+        animation-duration: 0.2s;
+      }
+      /* End of Flip Clock linear CSS */
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js" charset="utf-8"></script>
+    <script src="../src/flip-clock.js" charset="utf-8"></script>
+    <script type="text/javascript">
+    $(function() {
+      new FlipClockManager('#countdown1').currentTime();
+
+      var midnight = new Date();
+      midnight.setHours(23);
+      midnight.setMinutes(59);
+      midnight.setSeconds(59);
+      new FlipClockManager('#countdown2', 'flipclock-small').countdownToDate(midnight);
+
+      // Custom look
+      new FlipClockManager('#countdown3', 'flipclock-blue flipclock-linear').currentTime();
+      new FlipClockManager('#countdown4','flipclock-small flipclock-blue').countFromDate(new Date());
+    });
+    </script>
+  </head>
+  <body>
+
+    <div id="countdown1"></div>
+    <div id="countdown2"></div>
+    <div id="countdown3"></div>
+    <div id="countdown4"></div>
+
+  </body>
+</html>
