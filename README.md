@@ -2,4 +2,4 @@
 
 ![Flip Clock preview](http://i.imgur.com/eigE2iA.gif)
 
-[Live Demo](http://bojandevic.github.io/flip-clock/)
+[Live Demo](https://cdn.rawgit.com/bojandevic/flip-clock/master/examples/index.html)
