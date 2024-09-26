@@ -1,64 +1,65 @@
+// Constants
+const ANIMATION_END_EVENTS =
+  "animationend webkitAnimationEnd oAnimationEnd MSAnimationEnd";
+const UPDATE_INTERVAL = 1000; // 1 second
+
 class FlipClock {
   constructor(selector) {
     this.mainEl = document.querySelector(selector);
-    this.frontTopEl = this.mainEl.querySelector("div.flip-top.flip-front");
-    this.frontBottomEl = this.mainEl.querySelector(
-      "div.flip-bottom.flip-front"
-    );
-    this.backTopEl = this.mainEl.querySelector("div.flip-top.flip-back");
-    this.backBottomEl = this.mainEl.querySelector("div.flip-bottom.flip-back");
-
+    this.elements = {
+      frontTop: this.mainEl.querySelector(".flip-top.flip-front"),
+      frontBottom: this.mainEl.querySelector(".flip-bottom.flip-front"),
+      backTop: this.mainEl.querySelector(".flip-top.flip-back"),
+      backBottom: this.mainEl.querySelector(".flip-bottom.flip-back"),
+    };
+    this.spans = {
+      frontTop: this.elements.frontTop.querySelector("span"),
+      frontBottom: this.elements.frontBottom.querySelector("span"),
+      backTop: this.elements.backTop.querySelector("span"),
+      backBottom: this.elements.backBottom.querySelector("span"),
+    };
     this.setupEventListeners();
   }
 
   setupEventListeners() {
-    const animationEndEvents =
-      "animationend webkitAnimationEnd oAnimationEnd MSAnimationEnd";
-
-    this.frontTopEl.addEventListener(animationEndEvents, () => {
-      this.frontTopEl.classList.remove("flip-top-animate");
-      this.updateFrontElements();
-      this.frontBottomEl.classList.add("flip-bottom-animate");
+    this.elements.frontTop.addEventListener(ANIMATION_END_EVENTS, () => {
+      this.elements.frontTop.classList.remove("flip-top-animate");
+      this.updateElements("front");
+      this.elements.frontBottom.classList.add("flip-bottom-animate");
     });
 
-    this.frontBottomEl.addEventListener(animationEndEvents, () => {
-      this.frontBottomEl.classList.remove("flip-bottom-animate");
-      this.updateBackElements();
+    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENTS, () => {
+      this.elements.frontBottom.classList.remove("flip-bottom-animate");
+      this.updateElements("back");
     });
   }
 
-  updateFrontElements() {
-    this.frontTopEl.querySelector("span").textContent = this.nextNumber;
-    this.frontBottomEl.querySelector("span").textContent = this.nextNumber;
-  }
-
-  updateBackElements() {
-    this.backTopEl.querySelector("span").textContent = this.nextNumber;
-    this.backBottomEl.querySelector("span").textContent = this.nextNumber;
+  updateElements(side) {
+    this.spans[`${side}Top`].textContent = this.nextNumber;
+    this.spans[`${side}Bottom`].textContent = this.nextNumber;
   }
 
   update(number) {
     if (number === this.nextNumber) return;
-
     this.nextNumber = number;
-    this.frontTopEl.classList.add("flip-top-animate");
-    this.backTopEl.querySelector("span").textContent = this.nextNumber;
+    this.elements.frontTop.classList.add("flip-top-animate");
+    this.spans.backTop.textContent = this.nextNumber;
   }
 }
 
-// FlipClockManager class
 class FlipClockManager {
   static idx = 0;
 
-  constructor(selector, cls) {
+  constructor(selector, cls = "") {
     this.mainEl = document.querySelector(selector);
     this.cls = cls;
-    FlipClockManager.idx++;
+    this.clocks = {};
+    this.currentInterval = null;
   }
 
-  generateCounterHtml(id, cls) {
+  generateCounterHtml(id) {
     return `
-      <div id="${id}" class="flip-clock ${cls}">
+      <div id="${id}" class="flip-clock ${this.cls}">
         <div class="flip-top flip-front"><span>0</span></div>
         <div class="flip-top flip-back"><span>0</span></div>
         <div class="flip-bottom flip-front"><span>0</span></div>
@@ -67,50 +68,66 @@ class FlipClockManager {
     `;
   }
 
-  initializeClock(callback) {
-    const mainHTML = [
-      this.generateCounterHtml(`fc-hours${FlipClockManager.idx}`, this.cls),
-      this.generateCounterHtml(`fc-minutes${FlipClockManager.idx}`, this.cls),
-      this.generateCounterHtml(`fc-seconds${FlipClockManager.idx}`, this.cls),
-    ].join("");
+  initializeClock(updateCallback) {
+    FlipClockManager.idx++;
+    const units = ["hours", "minutes", "seconds"];
+    const html = units
+      .map((unit) =>
+        this.generateCounterHtml(`fc-${unit}${FlipClockManager.idx}`)
+      )
+      .join("");
 
-    this.mainEl.innerHTML = mainHTML;
+    this.mainEl.innerHTML = html;
 
-    this.hours = new FlipClock(`#fc-hours${FlipClockManager.idx}`);
-    this.minutes = new FlipClock(`#fc-minutes${FlipClockManager.idx}`);
-    this.seconds = new FlipClock(`#fc-seconds${FlipClockManager.idx}`);
+    units.forEach((unit) => {
+      this.clocks[unit] = new FlipClock(`#fc-${unit}${FlipClockManager.idx}`);
+    });
 
+    this.stopClock();
+    this.currentInterval = setInterval(updateCallback, UPDATE_INTERVAL);
+  }
+
+  stopClock() {
     if (this.currentInterval) {
       clearInterval(this.currentInterval);
+      this.currentInterval = null;
     }
+  }
 
-    this.currentInterval = setInterval(callback, 1000);
+  updateClocks(hours, minutes, seconds) {
+    this.clocks.hours.update(hours);
+    this.clocks.minutes.update(minutes);
+    this.clocks.seconds.update(seconds);
   }
 
   currentTime() {
     this.initializeClock(() => {
-      const date = new Date();
-      this.hours.update(date.getHours());
-      this.minutes.update(date.getMinutes());
-      this.seconds.update(date.getSeconds());
+      const now = new Date();
+      this.updateClocks(now.getHours(), now.getMinutes(), now.getSeconds());
     });
   }
 
   countdownToDate(countdownDate) {
     this.initializeClock(() => {
-      const dateDiff = Math.round((countdownDate - new Date()) / 1000);
-      this.hours.update(Math.floor(dateDiff / 3600));
-      this.minutes.update(Math.floor(dateDiff / 60) % 60);
-      this.seconds.update(dateDiff % 60);
+      const now = new Date();
+      const dateDiff = Math.max(0, Math.floor((countdownDate - now) / 1000));
+      const hours = Math.floor(dateDiff / 3600);
+      const minutes = Math.floor(dateDiff / 60) % 60;
+      const seconds = dateDiff % 60;
+      this.updateClocks(hours, minutes, seconds);
+
+      if (dateDiff === 0) this.stopClock();
     });
   }
 
   countFromDate(startDate) {
     this.initializeClock(() => {
-      const dateDiff = Math.round((new Date() - startDate) / 1000);
-      this.hours.update(Math.floor(dateDiff / 3600));
-      this.minutes.update(Math.floor(dateDiff / 60) % 60);
-      this.seconds.update(dateDiff % 60);
+      const now = new Date();
+      const dateDiff = Math.floor((now - startDate) / 1000);
+      const hours = Math.floor(dateDiff / 3600);
+      const minutes = Math.floor(dateDiff / 60) % 60;
+      const seconds = dateDiff % 60;
+      this.updateClocks(hours, minutes, seconds);
     });
   }
 }
