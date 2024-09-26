@@ -1,103 +1,131 @@
-var FlipClock = function(selector) {
-	var animationEndEvents = 'animationend webkitAnimationEnd oAnimationEnd MSAnimationEnd';
+// Constants
+const ANIMATION_END_EVENT = "animationend";
+const UPDATE_INTERVAL = 1000; // 1 second
 
-	var me = this;
+class FlipClock {
+  constructor(element) {
+    this.mainEl = element;
+    this.elements = {
+      frontTop: this.mainEl.querySelector(".flip-top.flip-front"),
+      frontBottom: this.mainEl.querySelector(".flip-bottom.flip-front"),
+      backTop: this.mainEl.querySelector(".flip-top.flip-back"),
+      backBottom: this.mainEl.querySelector(".flip-bottom.flip-back"),
+    };
+    this.spans = {
+      frontTop: this.elements.frontTop.querySelector("span"),
+      frontBottom: this.elements.frontBottom.querySelector("span"),
+      backTop: this.elements.backTop.querySelector("span"),
+      backBottom: this.elements.backBottom.querySelector("span"),
+    };
+    this.currentNumber = 0;
+    this.nextNumber = 0;
+    this.setupEventListeners();
+  }
 
-	me.mainEl = $(selector);
+  setupEventListeners() {
+    this.elements.frontTop.addEventListener(ANIMATION_END_EVENT, () => {
+      this.elements.frontTop.classList.remove("flip-top-animate");
+      this.updateElements("front");
+      this.elements.frontBottom.classList.add("flip-bottom-animate");
+    });
 
-	me.frontTopEl    = me.mainEl.find('div.flip-top.flip-front');
-	me.frontBottomEl = me.mainEl.find('div.flip-bottom.flip-front');
-	me.backTopEl     = me.mainEl.find('div.flip-top.flip-back');
-	me.backBottomEl  = me.mainEl.find('div.flip-bottom.flip-back');
+    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENT, () => {
+      this.elements.frontBottom.classList.remove("flip-bottom-animate");
+      this.updateElements("back");
+      this.currentNumber = this.nextNumber;
+    });
+  }
 
-	me.frontTopEl.on(animationEndEvents, function(event) {
-		me.frontTopEl.removeClass('flip-top-animate');
+  updateElements(side) {
+    this.spans[`${side}Top`].textContent = this.nextNumber;
+    this.spans[`${side}Bottom`].textContent = this.nextNumber;
+  }
 
-		me.frontTopEl.find('span').html(me.nextNumber);
-		me.frontBottomEl.find('span').html(me.nextNumber);
+  update(number) {
+    if (number === this.currentNumber) return;
+    this.nextNumber = number;
+    this.elements.frontTop.classList.add("flip-top-animate");
+    this.spans.backTop.textContent = this.nextNumber;
+    this.spans.backBottom.textContent = this.nextNumber;
+  }
+}
 
-		me.frontBottomEl.addClass('flip-bottom-animate');
-	});
+class FlipClockManager {
+  constructor(selector, cls = "") {
+    this.mainEl = document.querySelector(selector);
+    this.cls = cls;
+    this.clocks = {};
+    this.currentInterval = null;
+  }
 
-	me.frontBottomEl.on(animationEndEvents, function(event) {
-		me.frontBottomEl.removeClass('flip-bottom-animate');
+  generateCounterHtml(unit) {
+    return `
+      <div class="flip-clock ${this.cls}" data-unit="${unit}">
+        <div class="flip-top flip-front"><span>0</span></div>
+        <div class="flip-top flip-back"><span>0</span></div>
+        <div class="flip-bottom flip-front"><span>0</span></div>
+        <div class="flip-bottom flip-back"><span>0</span></div>
+      </div>
+    `;
+  }
 
-		me.backTopEl.find('span').html(me.nextNumber);
-		me.backBottomEl.find('span').html(me.nextNumber);
-	});
+  initializeClock(updateCallback) {
+    const units = ["hours", "minutes", "seconds"];
+    const html = units.map((unit) => this.generateCounterHtml(unit)).join("");
 
-	return {
-		update: function(number) {
-			if (number == me.nextNumber)
-				return;
+    this.mainEl.innerHTML = html;
 
-			me.nextNumber = number;
-			me.frontTopEl.addClass('flip-top-animate');
-			me.backTopEl.find('span').html(me.nextNumber);
-		}
-	}
-};
+    units.forEach((unit) => {
+      const element = this.mainEl.querySelector(`[data-unit="${unit}"]`);
+      this.clocks[unit] = new FlipClock(element);
+    });
 
-var FlipClockManager = function(selector, cls) {
-	var me = this;
-	me.mainEl = $(selector);
+    this.stopClock();
+    this.currentInterval = setInterval(updateCallback, UPDATE_INTERVAL);
+    updateCallback(); // Call immediately to set initial values
+  }
 
-	FlipClockManager.idx = (FlipClockManager.idx || 0) + 1;
+  stopClock() {
+    if (this.currentInterval) {
+      clearInterval(this.currentInterval);
+      this.currentInterval = null;
+    }
+  }
 
-	var generateCounterHtml = function(id, cls) {
-		return ['<div id="' + id + '" class="flip-clock ' + cls + '">',
-					  '<div class="flip-top flip-front"><span>0</span></div>',
-					  '<div class="flip-top flip-back"><span>0</span></div>',
-					  '<div class="flip-bottom flip-front"><span>0</span></div>',
-					  '<div class="flip-bottom flip-back"><span>0</span></div>',
-				  '</div>'].join('');
-	}
+  updateClocks(hours, minutes, seconds) {
+    this.clocks.hours.update(hours);
+    this.clocks.minutes.update(minutes);
+    this.clocks.seconds.update(seconds);
+  }
 
-	var initializeClock = function(callback) {
-		var mainHTML = '';
-		mainHTML += generateCounterHtml('fc-hours' + FlipClockManager.idx, cls);
-		mainHTML += generateCounterHtml('fc-minutes' + FlipClockManager.idx,cls);
-		mainHTML += generateCounterHtml('fc-seconds' + FlipClockManager.idx, cls);
+  currentTime() {
+    this.initializeClock(() => {
+      const now = new Date();
+      this.updateClocks(now.getHours(), now.getMinutes(), now.getSeconds());
+    });
+  }
 
-		me.mainEl.html(mainHTML);
+  countdownToDate(countdownDate) {
+    this.initializeClock(() => {
+      const now = new Date();
+      const dateDiff = Math.max(0, Math.floor((countdownDate - now) / 1000));
+      const hours = Math.floor(dateDiff / 3600);
+      const minutes = Math.floor(dateDiff / 60) % 60;
+      const seconds = dateDiff % 60;
+      this.updateClocks(hours, minutes, seconds);
 
-		me.hours   = new FlipClock('#fc-hours'   + FlipClockManager.idx);
-		me.minutes = new FlipClock('#fc-minutes' + FlipClockManager.idx);
-		me.seconds = new FlipClock('#fc-seconds' + FlipClockManager.idx);
+      if (dateDiff === 0) this.stopClock();
+    });
+  }
 
-		if (me.currentInterval)
-			clearInterval(me.currentInterval);
-
-		me.currentInterval = setInterval(callback, 1000);
-	}
-
-	return {
-		currentTime: function() {
-			initializeClock(function() {
-				var date = new Date();
-
-				me.hours.update(date.getHours());
-				me.minutes.update(date.getMinutes());
-				me.seconds.update(date.getSeconds());
-			});
-		},
-		countdownToDate: function(countdownDate) {
-			initializeClock(function() {
-				var dateDiff = Math.round((countdownDate.getTime() - new Date().getTime()) / 1000);
-
-				me.hours.update(Math.round(dateDiff / 3600));
-				me.minutes.update(Math.round(dateDiff / 60) % 60);
-				me.seconds.update(dateDiff % 60);
-			});
-		},
-		countFromDate: function(startDate) {
-			initializeClock(function() {
-				var dateDiff = Math.round((new Date().getTime() - startDate.getTime()) / 1000);
-
-				me.hours.update(Math.round(dateDiff / 3600));
-				me.minutes.update(Math.round(dateDiff / 60) % 60);
-				me.seconds.update(dateDiff % 60);
-			});
-		}
-	}
-};
+  countFromDate(startDate) {
+    this.initializeClock(() => {
+      const now = new Date();
+      const dateDiff = Math.floor((now - startDate) / 1000);
+      const hours = Math.floor(dateDiff / 3600);
+      const minutes = Math.floor(dateDiff / 60) % 60;
+      const seconds = dateDiff % 60;
+      this.updateClocks(hours, minutes, seconds);
+    });
+  }
+}
