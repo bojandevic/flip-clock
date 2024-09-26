@@ -1,7 +1,3 @@
-// Constants
-const ANIMATION_END_EVENT = "animationend";
-const UPDATE_INTERVAL = 1000; // 1 second
-
 class FlipClock {
   constructor(element) {
     this.mainEl = element;
@@ -19,21 +15,8 @@ class FlipClock {
     };
     this.currentNumber = 0;
     this.nextNumber = 0;
-    this.setupEventListeners();
-  }
-
-  setupEventListeners() {
-    this.elements.frontTop.addEventListener(ANIMATION_END_EVENT, () => {
-      this.elements.frontTop.classList.remove("flip-top-animate");
-      this.updateElements("front");
-      this.elements.frontBottom.classList.add("flip-bottom-animate");
-    });
-
-    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENT, () => {
-      this.elements.frontBottom.classList.remove("flip-bottom-animate");
-      this.updateElements("back");
-      this.currentNumber = this.nextNumber;
-    });
+    this.isAnimating = false;
+    this.animationProgress = 0;
   }
 
   updateElements(side) {
@@ -42,11 +25,56 @@ class FlipClock {
   }
 
   update(number) {
-    if (number === this.currentNumber) return;
+    if (number === this.currentNumber || this.isAnimating) return;
     this.nextNumber = number;
-    this.elements.frontTop.classList.add("flip-top-animate");
-    this.spans.backTop.textContent = this.nextNumber;
-    this.spans.backBottom.textContent = this.nextNumber;
+    this.isAnimating = true;
+    this.animationProgress = 0;
+    this.updateElements("back");
+    this.elements.backBottom.classList.add("hidden");
+    this.animate();
+  }
+
+  animate = (currentTime) => {
+    if (!this.isAnimating) return;
+
+    this.animationProgress += 0.005; // Adjust for faster/slower animation
+
+    if (this.animationProgress <= 1) {
+      this.animateFlip(this.animationProgress);
+      requestAnimationFrame(this.animate);
+    } else {
+      this.finishAnimation();
+    }
+  };
+
+  animateFlip(progress) {
+    if (progress <= 0.5) {
+      // Animate top half
+      const rotation = -180 * progress;
+      this.elements.frontTop.style.transform = `rotateX(${rotation}deg)`;
+    } else {
+      // Transition to bottom half
+      if (progress <= 0.51) {
+        this.elements.frontTop.classList.add("hidden");
+        this.elements.backBottom.classList.remove("hidden");
+        this.elements.backBottom.classList.add("active");
+      }
+      // Animate bottom half
+      const rotation = 180 * (1 - progress);
+      console.log(rotation);
+      this.elements.backBottom.style.transform = `rotateX(${rotation}deg)`;
+    }
+  }
+
+  finishAnimation() {
+    this.elements.frontTop.style.transform = "";
+    this.elements.frontTop.classList.remove("hidden");
+    this.elements.backBottom.style.transform = "";
+    this.elements.backBottom.classList.remove("active");
+    this.elements.backBottom.classList.add("hidden");
+    this.updateElements("front");
+    this.currentNumber = this.nextNumber;
+    this.isAnimating = false;
   }
 }
 
@@ -55,7 +83,8 @@ class FlipClockManager {
     this.mainEl = document.querySelector(selector);
     this.cls = cls;
     this.clocks = {};
-    this.currentInterval = null;
+    this.animationFrameId = null;
+    this.lastUpdateTime = 0;
   }
 
   generateCounterHtml(unit) {
@@ -81,14 +110,24 @@ class FlipClockManager {
     });
 
     this.stopClock();
-    this.currentInterval = setInterval(updateCallback, UPDATE_INTERVAL);
-    updateCallback(); // Call immediately to set initial values
+    this.lastUpdateTime = performance.now();
+    this.updateCallback = updateCallback;
+    this.animate();
   }
 
+  animate = (currentTime) => {
+    this.animationFrameId = requestAnimationFrame(this.animate);
+
+    if (currentTime - this.lastUpdateTime >= 1000) {
+      this.updateCallback();
+      this.lastUpdateTime = currentTime;
+    }
+  };
+
   stopClock() {
-    if (this.currentInterval) {
-      clearInterval(this.currentInterval);
-      this.currentInterval = null;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
