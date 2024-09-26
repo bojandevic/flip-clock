@@ -1,8 +1,10 @@
+// Constants
+const ANIMATION_END_EVENT = "animationend";
 const UPDATE_INTERVAL = 1000; // 1 second
 
 class FlipClock {
-  constructor(selector) {
-    this.mainEl = document.querySelector(selector);
+  constructor(element) {
+    this.mainEl = element;
     this.elements = {
       frontTop: this.mainEl.querySelector(".flip-top.flip-front"),
       frontBottom: this.mainEl.querySelector(".flip-bottom.flip-front"),
@@ -21,13 +23,13 @@ class FlipClock {
   }
 
   setupEventListeners() {
-    this.elements.frontTop.addEventListener("animationend", () => {
+    this.elements.frontTop.addEventListener(ANIMATION_END_EVENT, () => {
       this.elements.frontTop.classList.remove("flip-top-animate");
       this.updateElements("front");
       this.elements.frontBottom.classList.add("flip-bottom-animate");
     });
 
-    this.elements.frontBottom.addEventListener("animationend", () => {
+    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENT, () => {
       this.elements.frontBottom.classList.remove("flip-bottom-animate");
       this.updateElements("back");
       this.currentNumber = this.nextNumber;
@@ -56,9 +58,9 @@ class FlipClockManager {
     this.currentInterval = null;
   }
 
-  generateCounterHtml(id) {
+  generateCounterHtml(unit) {
     return `
-      <div id="${id}" class="flip-clock ${this.cls}">
+      <div class="flip-clock ${this.cls}" data-unit="${unit}">
         <div class="flip-top flip-front"><span>0</span></div>
         <div class="flip-top flip-back"><span>0</span></div>
         <div class="flip-bottom flip-front"><span>0</span></div>
@@ -69,14 +71,13 @@ class FlipClockManager {
 
   initializeClock(updateCallback) {
     const units = ["hours", "minutes", "seconds"];
-    const html = units
-      .map((unit) => this.generateCounterHtml(`fc-${unit}`))
-      .join("");
+    const html = units.map((unit) => this.generateCounterHtml(unit)).join("");
 
     this.mainEl.innerHTML = html;
 
     units.forEach((unit) => {
-      this.clocks[unit] = new FlipClock(`#fc-${unit}`);
+      const element = this.mainEl.querySelector(`[data-unit="${unit}"]`);
+      this.clocks[unit] = new FlipClock(element);
     });
 
     this.stopClock();
