@@ -1,6 +1,3 @@
-// Constants
-const ANIMATION_END_EVENTS =
-  "animationend webkitAnimationEnd oAnimationEnd MSAnimationEnd";
 const UPDATE_INTERVAL = 1000; // 1 second
 
 class FlipClock {
@@ -18,38 +15,40 @@ class FlipClock {
       backTop: this.elements.backTop.querySelector("span"),
       backBottom: this.elements.backBottom.querySelector("span"),
     };
+    this.currentNumber = 0;
+    this.nextNumber = 0;
     this.setupEventListeners();
   }
 
   setupEventListeners() {
-    this.elements.frontTop.addEventListener(ANIMATION_END_EVENTS, () => {
+    this.elements.frontTop.addEventListener("animationend", () => {
       this.elements.frontTop.classList.remove("flip-top-animate");
       this.updateElements("front");
       this.elements.frontBottom.classList.add("flip-bottom-animate");
     });
 
-    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENTS, () => {
+    this.elements.frontBottom.addEventListener("animationend", () => {
       this.elements.frontBottom.classList.remove("flip-bottom-animate");
       this.updateElements("back");
+      this.currentNumber = this.nextNumber;
     });
   }
 
   updateElements(side) {
-    this.spans[`${side}Top`].textContent = this.currentNumber;
-    this.spans[`${side}Bottom`].textContent = this.currentNumber;
+    this.spans[`${side}Top`].textContent = this.nextNumber;
+    this.spans[`${side}Bottom`].textContent = this.nextNumber;
   }
 
   update(number) {
     if (number === this.currentNumber) return;
-    this.currentNumber = number;
+    this.nextNumber = number;
     this.elements.frontTop.classList.add("flip-top-animate");
-    this.spans.backTop.textContent = this.currentNumber;
+    this.spans.backTop.textContent = this.nextNumber;
+    this.spans.backBottom.textContent = this.nextNumber;
   }
 }
 
 class FlipClockManager {
-  static idx = 0;
-
   constructor(selector, cls = "") {
     this.mainEl = document.querySelector(selector);
     this.cls = cls;
@@ -69,22 +68,20 @@ class FlipClockManager {
   }
 
   initializeClock(updateCallback) {
-    FlipClockManager.idx++;
     const units = ["hours", "minutes", "seconds"];
     const html = units
-      .map((unit) =>
-        this.generateCounterHtml(`fc-${unit}${FlipClockManager.idx}`)
-      )
+      .map((unit) => this.generateCounterHtml(`fc-${unit}`))
       .join("");
 
     this.mainEl.innerHTML = html;
 
     units.forEach((unit) => {
-      this.clocks[unit] = new FlipClock(`#fc-${unit}${FlipClockManager.idx}`);
+      this.clocks[unit] = new FlipClock(`#fc-${unit}`);
     });
 
     this.stopClock();
     this.currentInterval = setInterval(updateCallback, UPDATE_INTERVAL);
+    updateCallback(); // Call immediately to set initial values
   }
 
   stopClock() {
