@@ -35,15 +35,15 @@ class FlipClock {
   }
 
   updateElements(side) {
-    this.spans[`${side}Top`].textContent = this.nextNumber;
-    this.spans[`${side}Bottom`].textContent = this.nextNumber;
+    this.spans[`${side}Top`].textContent = this.currentNumber;
+    this.spans[`${side}Bottom`].textContent = this.currentNumber;
   }
 
   update(number) {
-    if (number === this.nextNumber) return;
-    this.nextNumber = number;
+    if (number === this.currentNumber) return;
+    this.currentNumber = number;
     this.elements.frontTop.classList.add("flip-top-animate");
-    this.spans.backTop.textContent = this.nextNumber;
+    this.spans.backTop.textContent = this.currentNumber;
   }
 }
 
