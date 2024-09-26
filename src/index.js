@@ -31,13 +31,14 @@ class FlipClock {
     this.animationProgress = 0;
     this.updateElements("back");
     this.elements.backBottom.classList.add("hidden");
+    this.elements.backBottom.style.transform = "rotateX(-90deg)";
     this.animate();
   }
 
   animate = (currentTime) => {
     if (!this.isAnimating) return;
 
-    this.animationProgress += 0.005; // Adjust for faster/slower animation
+    this.animationProgress += 0.01; // Adjust for faster/slower animation
 
     if (this.animationProgress <= 1) {
       this.animateFlip(this.animationProgress);
@@ -61,7 +62,6 @@ class FlipClock {
       }
       // Animate bottom half
       const rotation = 180 * (1 - progress);
-      console.log(rotation);
       this.elements.backBottom.style.transform = `rotateX(${rotation}deg)`;
     }
   }

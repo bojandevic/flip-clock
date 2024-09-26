@@ -32,6 +32,7 @@
   border-radius: 0px 0px 9px 9px;
   top: 50px;
   border-top: 1px solid transparent;
+  transform-origin: 50% 0%; /* Ensure bottom flips from its top edge */
 }
 
 .flip-bottom span {
@@ -50,7 +51,6 @@
 .flip-top.flip-front {
   transform-origin: 50% 100%;
 }
-
 .flip-bottom.flip-front {
   transform-origin: 50% 0%;
 }
