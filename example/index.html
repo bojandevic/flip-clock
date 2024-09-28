@@ -19,16 +19,12 @@
         font-family: "Droid Sans", serif;
       }
     </style>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"
-      charset="utf-8"
-    ></script>
     <script src="../src/index.js" charset="utf-8"></script>
     <script type="text/javascript">
-      $(function () {
+      document.addEventListener("DOMContentLoaded", function () {
         new FlipClockManager("#countdown1").currentTime();
 
-        var midnight = new Date();
+        const midnight = new Date();
         midnight.setHours(23);
         midnight.setMinutes(59);
         midnight.setSeconds(59);
