@@ -91,10 +91,10 @@ class FlipClockManager {
   generateCounterHtml(unit) {
     return `
       <div class="flip-clock ${this.cls}" data-unit="${unit}">
-        <div class="flip-top flip-front"><span>0</span></div>
-        <div class="flip-top flip-back"><span>0</span></div>
-        <div class="flip-bottom flip-front"><span>0</span></div>
-        <div class="flip-bottom flip-back"><span>0</span></div>
+        <div class="flip-top flip-front"><span>00</span></div>
+        <div class="flip-top flip-back"><span>00</span></div>
+        <div class="flip-bottom flip-front"><span>00</span></div>
+        <div class="flip-bottom flip-back"><span>00</span></div>
       </div>
     `;
   }
