@@ -25,8 +25,9 @@ class FlipClock {
   }
 
   update(number) {
-    if (number === this.currentNumber || this.isAnimating) return;
-    this.nextNumber = number;
+    const passedNumber = number.toString().padStart(2, "0");
+    if (passedNumber === this.currentNumber || this.isAnimating) return;
+    this.nextNumber = passedNumber;
     this.isAnimating = true;
     this.animationProgress = 0;
     this.updateElements("back");
