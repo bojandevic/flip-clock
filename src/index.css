@@ -108,3 +108,36 @@
 }
 
 /* End of Flip Clock small CSS */
+
+/* Start of Flip Clock medium CSS */
+
+.flip-clock.flipclock-medium {
+  margin-right: 15px;
+  height: 85px;
+  min-width: 64px;
+}
+
+.flip-clock.flipclock-medium div {
+  min-width: 64px;
+  height: 37px;
+  font-size: 42px;
+  margin: 6px;
+  line-height: 75px;
+}
+
+.flipclock-medium .flip-top {
+  border-radius: 6px 6px 0px 0px;
+  top: 0px;
+}
+
+.flipclock-medium .flip-bottom {
+  border-radius: 0px 0px 6px 6px;
+  top: 37px;
+}
+
+.flipclock-medium .flip-bottom span {
+  display: block;
+  margin-top: -37px;
+}
+
+/* End of Flip Clock medium CSS */
