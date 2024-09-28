@@ -13,8 +13,8 @@ class FlipClock {
       backTop: this.elements.backTop.querySelector("span"),
       backBottom: this.elements.backBottom.querySelector("span"),
     };
-    this.currentNumber = 0;
-    this.nextNumber = 0;
+    this.currentNumber = this.spans.frontTop.textContent;
+    this.nextNumber = this.currentNumber;
     this.isAnimating = false;
     this.animationProgress = 0;
   }
@@ -26,8 +26,9 @@ class FlipClock {
 
   update(number) {
     const passedNumber = number.toString().padStart(2, "0");
-    if (passedNumber === this.currentNumber || this.isAnimating) return;
+    if (passedNumber === this.currentNumber) return;
     this.nextNumber = passedNumber;
+    if (this.isAnimating) return;
     this.isAnimating = true;
     this.animationProgress = 0;
     this.updateElements("back");
@@ -91,28 +92,35 @@ class FlipClockManager {
   generateCounterHtml(unit) {
     return `
       <div class="flip-clock ${this.cls}" data-unit="${unit}">
-        <div class="flip-top flip-front"><span>00</span></div>
-        <div class="flip-top flip-back"><span>00</span></div>
-        <div class="flip-bottom flip-front"><span>00</span></div>
-        <div class="flip-bottom flip-back"><span>00</span></div>
+        <div class="flip-top flip-front"><span>{{value}}</span></div>
+        <div class="flip-top flip-back"><span>{{value}}</span></div>
+        <div class="flip-bottom flip-front"><span>{{value}}</span></div>
+        <div class="flip-bottom flip-back"><span>{{value}}</span></div>
       </div>
     `;
   }
 
   initializeClock(updateCallback) {
     const units = ["hours", "minutes", "seconds"];
-    const html = units.map((unit) => this.generateCounterHtml(unit)).join("");
+    let html = units.map((unit) => this.generateCounterHtml(unit)).join("");
 
     this.mainEl.innerHTML = html;
-
-    units.forEach((unit) => {
-      const element = this.mainEl.querySelector(`[data-unit="${unit}"]`);
-      this.clocks[unit] = new FlipClock(element);
-    });
 
     this.stopClock();
     this.lastUpdateTime = performance.now();
     this.updateCallback = updateCallback;
+
+    // Call updateCallback immediately to get initial values
+    this.updateCallback();
+
+    // Now initialize the clocks with the correct initial values
+    units.forEach((unit) => {
+      const element = this.mainEl.querySelector(`[data-unit="${unit}"]`);
+      const value = this.clocks[unit].currentNumber;
+      element.innerHTML = element.innerHTML.replace(/\{\{value\}\}/g, value);
+      this.clocks[unit] = new FlipClock(element);
+    });
+
     this.animate();
   }
 
@@ -133,9 +141,19 @@ class FlipClockManager {
   }
 
   updateClocks(hours, minutes, seconds) {
-    this.clocks.hours.update(hours);
-    this.clocks.minutes.update(minutes);
-    this.clocks.seconds.update(seconds);
+    if (!this.clocks.hours) {
+      // First time setup
+      this.clocks = {
+        hours: { currentNumber: hours.toString().padStart(2, "0") },
+        minutes: { currentNumber: minutes.toString().padStart(2, "0") },
+        seconds: { currentNumber: seconds.toString().padStart(2, "0") },
+      };
+    } else {
+      // Normal update
+      this.clocks.hours.update(hours);
+      this.clocks.minutes.update(minutes);
+      this.clocks.seconds.update(seconds);
+    }
   }
 
   currentTime() {
