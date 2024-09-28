@@ -186,4 +186,23 @@ class FlipClockManager {
       this.updateClocks(hours, minutes, seconds);
     });
   }
+
+  countdownTimer(duration) {
+    let remainingTime = duration;
+
+    this.initializeClock(() => {
+      if (remainingTime <= 0) {
+        this.stopClock();
+        return;
+      }
+
+      const hours = Math.floor(remainingTime / 3600);
+      const minutes = Math.floor((remainingTime % 3600) / 60);
+      const seconds = remainingTime % 60;
+
+      this.updateClocks(hours, minutes, seconds);
+
+      remainingTime--;
+    });
+  }
 }
