@@ -1,6 +1,6 @@
 :root {
   --clock-bg: white;
-  --clock-text: black;
+  --clock-text: #333;
   --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
