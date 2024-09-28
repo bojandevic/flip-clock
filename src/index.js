@@ -1,7 +1,3 @@
-// Constants
-const ANIMATION_END_EVENT = "animationend";
-const UPDATE_INTERVAL = 1000; // 1 second
-
 class FlipClock {
   constructor(element) {
     this.mainEl = element;
@@ -17,23 +13,10 @@ class FlipClock {
       backTop: this.elements.backTop.querySelector("span"),
       backBottom: this.elements.backBottom.querySelector("span"),
     };
-    this.currentNumber = 0;
-    this.nextNumber = 0;
-    this.setupEventListeners();
-  }
-
-  setupEventListeners() {
-    this.elements.frontTop.addEventListener(ANIMATION_END_EVENT, () => {
-      this.elements.frontTop.classList.remove("flip-top-animate");
-      this.updateElements("front");
-      this.elements.frontBottom.classList.add("flip-bottom-animate");
-    });
-
-    this.elements.frontBottom.addEventListener(ANIMATION_END_EVENT, () => {
-      this.elements.frontBottom.classList.remove("flip-bottom-animate");
-      this.updateElements("back");
-      this.currentNumber = this.nextNumber;
-    });
+    this.currentNumber = this.spans.frontTop.textContent;
+    this.nextNumber = this.currentNumber;
+    this.isAnimating = false;
+    this.animationProgress = 0;
   }
 
   updateElements(side) {
@@ -42,11 +25,58 @@ class FlipClock {
   }
 
   update(number) {
-    if (number === this.currentNumber) return;
-    this.nextNumber = number;
-    this.elements.frontTop.classList.add("flip-top-animate");
-    this.spans.backTop.textContent = this.nextNumber;
-    this.spans.backBottom.textContent = this.nextNumber;
+    const passedNumber = number.toString().padStart(2, "0");
+    if (passedNumber === this.currentNumber) return;
+    this.nextNumber = passedNumber;
+    if (this.isAnimating) return;
+    this.isAnimating = true;
+    this.animationProgress = 0;
+    this.updateElements("back");
+    this.elements.backBottom.classList.add("hidden");
+    this.elements.backBottom.style.transform = "rotateX(-90deg)";
+    this.animate();
+  }
+
+  animate = (currentTime) => {
+    if (!this.isAnimating) return;
+
+    this.animationProgress += 0.01; // Adjust for faster/slower animation
+
+    if (this.animationProgress <= 1) {
+      this.animateFlip(this.animationProgress);
+      requestAnimationFrame(this.animate);
+    } else {
+      this.finishAnimation();
+    }
+  };
+
+  animateFlip(progress) {
+    if (progress <= 0.5) {
+      // Animate top half
+      const rotation = -180 * progress;
+      this.elements.frontTop.style.transform = `rotateX(${rotation}deg)`;
+    } else {
+      // Transition to bottom half
+      if (progress <= 0.51) {
+        this.elements.frontTop.classList.add("hidden");
+        this.elements.backBottom.classList.remove("hidden");
+        this.elements.backBottom.classList.add("active");
+      }
+      // Animate bottom half
+      const rotation = 180 * (1 - progress);
+      this.elements.backBottom.style.transform = `rotateX(${rotation}deg)`;
+    }
+  }
+
+  finishAnimation() {
+    this.elements.frontTop.style.transform = "";
+    this.elements.frontTop.classList.remove("hidden");
+    this.elements.backBottom.style.transform = "";
+    this.elements.backBottom.classList.remove("active");
+    this.elements.backBottom.classList.add("hidden");
+    this.updateElements("front");
+    this.currentNumber = this.nextNumber;
+    this.isAnimating = false;
   }
 }
 
@@ -55,47 +85,75 @@ class FlipClockManager {
     this.mainEl = document.querySelector(selector);
     this.cls = cls;
     this.clocks = {};
-    this.currentInterval = null;
+    this.animationFrameId = null;
+    this.lastUpdateTime = 0;
   }
 
   generateCounterHtml(unit) {
     return `
       <div class="flip-clock ${this.cls}" data-unit="${unit}">
-        <div class="flip-top flip-front"><span>0</span></div>
-        <div class="flip-top flip-back"><span>0</span></div>
-        <div class="flip-bottom flip-front"><span>0</span></div>
-        <div class="flip-bottom flip-back"><span>0</span></div>
+        <div class="flip-top flip-front"><span>{{value}}</span></div>
+        <div class="flip-top flip-back"><span>{{value}}</span></div>
+        <div class="flip-bottom flip-front"><span>{{value}}</span></div>
+        <div class="flip-bottom flip-back"><span>{{value}}</span></div>
       </div>
     `;
   }
 
   initializeClock(updateCallback) {
     const units = ["hours", "minutes", "seconds"];
-    const html = units.map((unit) => this.generateCounterHtml(unit)).join("");
+    let html = units.map((unit) => this.generateCounterHtml(unit)).join("");
 
     this.mainEl.innerHTML = html;
 
+    this.stopClock();
+    this.lastUpdateTime = performance.now();
+    this.updateCallback = updateCallback;
+
+    // Call updateCallback immediately to get initial values
+    this.updateCallback();
+
+    // Now initialize the clocks with the correct initial values
     units.forEach((unit) => {
       const element = this.mainEl.querySelector(`[data-unit="${unit}"]`);
+      const value = this.clocks[unit].currentNumber;
+      element.innerHTML = element.innerHTML.replace(/\{\{value\}\}/g, value);
       this.clocks[unit] = new FlipClock(element);
     });
 
-    this.stopClock();
-    this.currentInterval = setInterval(updateCallback, UPDATE_INTERVAL);
-    updateCallback(); // Call immediately to set initial values
+    this.animate();
   }
 
+  animate = (currentTime) => {
+    this.animationFrameId = requestAnimationFrame(this.animate);
+
+    if (currentTime - this.lastUpdateTime >= 1000) {
+      this.updateCallback();
+      this.lastUpdateTime = currentTime;
+    }
+  };
+
   stopClock() {
-    if (this.currentInterval) {
-      clearInterval(this.currentInterval);
-      this.currentInterval = null;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
   }
 
   updateClocks(hours, minutes, seconds) {
-    this.clocks.hours.update(hours);
-    this.clocks.minutes.update(minutes);
-    this.clocks.seconds.update(seconds);
+    if (!this.clocks.hours) {
+      // First time setup
+      this.clocks = {
+        hours: { currentNumber: hours.toString().padStart(2, "0") },
+        minutes: { currentNumber: minutes.toString().padStart(2, "0") },
+        seconds: { currentNumber: seconds.toString().padStart(2, "0") },
+      };
+    } else {
+      // Normal update
+      this.clocks.hours.update(hours);
+      this.clocks.minutes.update(minutes);
+      this.clocks.seconds.update(seconds);
+    }
   }
 
   currentTime() {
@@ -126,6 +184,25 @@ class FlipClockManager {
       const minutes = Math.floor(dateDiff / 60) % 60;
       const seconds = dateDiff % 60;
       this.updateClocks(hours, minutes, seconds);
+    });
+  }
+
+  countdownTimer(duration) {
+    let remainingTime = duration;
+
+    this.initializeClock(() => {
+      if (remainingTime <= 0) {
+        this.stopClock();
+        return;
+      }
+
+      const hours = Math.floor(remainingTime / 3600);
+      const minutes = Math.floor((remainingTime % 3600) / 60);
+      const seconds = remainingTime % 60;
+
+      this.updateClocks(hours, minutes, seconds);
+
+      remainingTime--;
     });
   }
 }

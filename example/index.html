@@ -1,61 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flip Clock Examples</title>
-    <link rel="stylesheet" href="../src/index.css" media="screen" charset="utf-8">
-    <link href='https://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+    <link
+      rel="stylesheet"
+      href="../src/index.css"
+      media="screen"
+      charset="utf-8"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Droid+Sans"
+      rel="stylesheet"
+      type="text/css"
+    />
     <style media="screen">
       body {
-        font-family: 'Droid Sans', serif;
+        font-family: "Droid Sans", sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f0f0f0;
       }
-
-      /* Start of Flip Clock blue CSS */
-      .flip-clock.flipclock-blue div{
-        color:         white;
-        background:    #05a19f;
-        -moz-box-shadow:    3px 3px 3px #05616f;
-        -webkit-box-shadow: 3px 3px 3px #05616f;
-        box-shadow:         3px 3px 3px #05616f;
+      .example {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-      /* End of Flip Clock blue CSS */
-
-      /* Start of Flip Clock linear CSS */
-      .flipclock-linear .flip-top-animate {
-        animation-timing-function: linear;
-        animation-duration: 0.2s;
+      h1 {
+        text-align: center;
+        color: #333;
       }
-
-      .flipclock-linear .flip-bottom-animate {
-        animation-timing-function: linear;
-        animation-duration: 0.2s;
+      h2 {
+        color: #555;
       }
-      /* End of Flip Clock linear CSS */
+      p {
+        color: #666;
+      }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js" charset="utf-8"></script>
     <script src="../src/index.js" charset="utf-8"></script>
     <script type="text/javascript">
-    $(function() {
-      new FlipClockManager('#countdown1').currentTime();
+      document.addEventListener("DOMContentLoaded", function () {
+        new FlipClockManager("#countdown1").currentTime();
 
-      var midnight = new Date();
-      midnight.setHours(23);
-      midnight.setMinutes(59);
-      midnight.setSeconds(59);
-      new FlipClockManager('#countdown2', 'flipclock-small').countdownToDate(midnight);
+        const midnight = new Date();
+        midnight.setHours(23);
+        midnight.setMinutes(59);
+        midnight.setSeconds(59);
+        new FlipClockManager("#countdown2", "flipclock-small").countdownToDate(
+          midnight
+        );
 
-      // Custom look
-      new FlipClockManager('#countdown3', 'flipclock-blue flipclock-linear').currentTime();
-      new FlipClockManager('#countdown4','flipclock-small flipclock-blue').countFromDate(new Date());
-    });
+        // Custom look
+        new FlipClockManager(
+          "#countdown3",
+          "dark-mode flipclock-linear"
+        ).currentTime();
+        new FlipClockManager(
+          "#countdown4",
+          "flipclock-small dark-mode"
+        ).countFromDate(new Date());
+
+        // New example: Timer for 5 minutes
+        new FlipClockManager("#countdown5", "flipclock-medium").countdownTimer(
+          5 * 60
+        );
+      });
     </script>
   </head>
   <body>
+    <h1>Flip Clock Examples</h1>
 
-    <div id="countdown1"></div>
-    <div id="countdown2"></div>
-    <div id="countdown3"></div>
-    <div id="countdown4"></div>
+    <div class="example">
+      <h2>1. Current Time</h2>
+      <p>This clock shows the current time and updates in real-time.</p>
+      <div id="countdown1"></div>
+    </div>
 
+    <div class="example">
+      <h2>2. Countdown to Midnight</h2>
+      <p>
+        This small clock counts down to midnight (23:59:59) of the current day.
+      </p>
+      <div id="countdown2"></div>
+    </div>
+
+    <div class="example">
+      <h2>3. Dark Mode</h2>
+      <p>A dark mode version of the current time with a linear layout.</p>
+      <div id="countdown3"></div>
+    </div>
+
+    <div class="example">
+      <h2>4. Count Up from Page Load</h2>
+      <p>This small dark mode clock counts up from when the page was loaded.</p>
+      <div id="countdown4"></div>
+    </div>
+
+    <div class="example">
+      <h2>5. 5-Minute Timer</h2>
+      <p>This medium-sized clock counts down from 5 minutes.</p>
+      <div id="countdown5"></div>
+    </div>
   </body>
 </html>
